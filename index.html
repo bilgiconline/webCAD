@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenLayers Bilgiç Harita Örneği</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="assets/css/field-picker.min.css">
+</head>
+<body>
+    <div id="demo-topbar">
+        <div class="button-group">
+            <button id="show-modal">Show Modal</button>
+            <button id="hide-modal">Hide Modal</button>
+        </div>
+    </div>
+    <div id="container">
+    </div>
+    <script src="mock/field-data.js"></script>
+    <script src="assets/js/field-picker.min.js"></script>
+    <script>
+        let instance = FieldPicker("#container", {
+            data: window.FieldOptions.data,
+            skips: "kdd",
+            updater: function (data) {
+                console.log(data)
+            }
+        });
+        document.getElementById('show-modal').addEventListener('click', instance.Show);
+        document.getElementById('hide-modal').addEventListener('click', instance.Hide);
+        document.getElementById('show-modal').click();
+    </script>
+    <select id="layer-select">
+        <option value="osm">OpenStreetMap</option>
+        <option value="bing-road">Bing Roads</option>
+        <option value="bing-aerial">Bing Aerial</option>
+        <option value="bing-aerial-labels">Bing Aerial with Labels</option>
+    </select>
+    <select id="draw-type">
+        <option value="None">Çizim Yok</option>
+        <option value="Point">Nokta</option>
+        <option value="LineString">Çizgi</option>
+        <option value="Polygon">Poligon</option>
+    </select>
+    <div id="map" class="map"></div>
+    <div class="controls">
+        <button id="toggle-snap">Snap'i Aç/Kapat</button>
+      </div>
+    <div id="draw-tools" class="draw-tools">
+        <button id="draw-nothing" class="draw-tool-button"></button>
+        <button id="draw-point" class="draw-tool-button"></button>
+        <button id="draw-line" class="draw-tool-button"></button>
+        <button id="draw-polygon" class="draw-tool-button"></button>
+    </div>
+    <div class="multi-button">
+        <button><img src="https://img.icons8.com/material-rounded/24/737373/cut.png"/><span>Kes</span></button>
+        <button id="copy-feature"><img src="https://img.icons8.com/material-rounded/24/737373/copy.png"/><span>Kopyala</span></button>
+        <button id="move-feature"><img src="https://img.icons8.com/material-rounded/24/737373/paste.png"/><span>Taşı</span></button>
+        <button id="modify-feature"><img src="https://img.icons8.com/?size=100&id=mzrucTzNlPTE&format=png&color=737373"/><span>Düzenle</span></button>
+        <button id="delete-feature"><img src="https://img.icons8.com/material-rounded/24/737373/delete.png"/><span>Sil</span></button>
+    </div>
+    <div id="element-modify-tools" class="element-modify-tools">
+        <button id="copy-tool" class="element-modify-button"></button>
+        <button id="modify-point-tool" class="element-modify-button"></button>
+        <button id="move-tool" class="element-modify-button"></button>
+    </div>
+    <div id="mouse-position" class="mouse-position"></div>
+    <div id="selected-features" class="selected-features"><span>Element Özellikleri:</span></div>
+    <script src="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

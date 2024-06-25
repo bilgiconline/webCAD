@@ -1,0 +1,333 @@
+/* css/styles.css */
+@import url("https://fonts.googleapis.com/css?family=Quicksand&display=swap");
+
+input[type=button]::-moz-focus-inner {
+  border: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#demo-topbar {
+  display: none;
+}
+
+#layer-select,
+#draw-type {
+  position: absolute;
+  top: 10px;
+  right: 220px;
+  visibility: hidden;
+}
+
+#draw-type {
+  left: 150px;
+}
+
+.map {
+  height: 100vh;
+  width: calc(100%);
+  float: left;
+  background-color: black;
+}
+
+.mouse-position {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background-color: white;
+  padding: 5px;
+  border: 1px solid #ccc;
+  z-index: 1000;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+}
+
+.selected-features {
+  position: absolute;
+  bottom: 50px;
+  right: 5px;
+  padding: 10px;
+  float: left;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  color: Black;
+  font-family: "Quicksand", sans-serif;
+  overflow-y: auto;
+  max-height: 490px;
+  z-index: 1000;
+  font-size: 80%;
+}
+
+.draw-tools {
+  position: absolute;
+  top: 90px;
+  left: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid #ccc;
+  padding: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.draw-tool-button {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 5px;
+  padding: 0;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.draw-tool-button:hover {
+  background-color: #e0e0e0;
+}
+
+#draw-nothing {
+  background-image: url('image/button/none.png');
+}
+
+#draw-point {
+  background-image: url('image/button/point.png');
+}
+
+#draw-line {
+  background-image: url('image/button/line.png');
+}
+
+#draw-polygon {
+  background-image: url('image/button/polygon.png');
+}
+
+.element-modify-tools {
+  display: block;
+  position: absolute;
+  top: 40%;
+  left: 1%;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid #ccc;
+  padding: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  visibility: hidden;
+}
+
+.element-modify-button {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 5px;
+  padding: 0;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+#modify-point-tool {
+  background-image: url('image/button/modify-polygon.png');
+}
+
+#copy-tool {
+  background-image: url('image/button/copy.png');
+}
+
+#move-tool {
+  background-image: url('image/button/move.png');
+}
+
+.element-modify-button:hover {
+  background-color: #e0e0e0;
+}
+
+.label {
+  background-color: white;
+  border: 1px solid black;
+  padding: 2px;
+  font-size: 12px;
+  white-space: nowrap;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.controls {
+  position: absolute;
+  bottom: 40px;
+  left: 10px;
+  background-color: rgba(255, 255, 255, 0);
+  padding: 0px;
+  border: 0px solid #ccc;
+  visibility: 'hidden';
+}
+
+.multi-button {
+  display: flex;
+  background: #f0f0f0;
+  position: absolute;
+  top: 2%;
+  left: 4%;
+  border-radius: 40px;
+  z-index: 1000;
+  visibility: visible;
+  box-shadow: -0px -0px 10px 0 rgba(255, 255, 255, 0.8),
+    0px 0px 10px 0 rgba(0, 0, 0, 0.06),
+    -0px -0px 4px 0 white,
+    -0px -0px 4px 0 rgba(0, 0, 0, 0.06),
+    -0px -0px 4px 0 rgba(0, 0, 0, 0.01) inset,
+    -0px -0px 4px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+.multi-button button {
+  position: relative;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-family: "Quicksand", sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  color: #969696;
+  height: 40px;
+  padding: 0 20px;
+  border: unset;
+  transition: color 0.08s ease, background 0.12s ease;
+}
+
+.multi-button button span {
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.multi-button button img {
+  pointer-events: none;
+  opacity: 0;
+  height: 24px;
+  width: 24px;
+  margin-right: -24px;
+  transition: margin 0.14s cubic-bezier(0.25, 0.5, 0.25, 1.25), opacity 0.04s ease;
+}
+
+.multi-button button:first-child {
+  border-radius: 40px 0 0 40px;
+}
+
+.multi-button button:last-child {
+  border-radius: 0 40px 40px 0;
+}
+
+.multi-button button:hover,
+.multi-button button.active,
+.multi-button button:active {
+  position: relative;
+  color: #737373;
+  background: #e9e9e9;
+  overflow: hidden;
+}
+
+.multi-button button:hover img,
+.multi-button button.active img,
+.multi-button button:active img {
+  margin-right: 24px;
+  opacity: 1;
+  transition: margin 0.14s cubic-bezier(0.25, 0.5, 0.25, 1.25), opacity 0.2s ease;
+}
+
+.multi-button button.active {
+  background: #737373;
+  color: white;
+  z-index: 1;
+  box-shadow: -2px 2px 4px 0 rgba(0, 0, 0, 0.2) inset, -2px -2px 4px 0 rgba(255, 255, 255, 0.2) inset;
+}
+
+.multi-button button.active #timeupdate {
+  transition: 0.4s ease;
+  z-index: -1;
+  position: absolute;
+  content: "";
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+  background: #1298ff;
+  border-radius: 0 40px 40px 0;
+  box-shadow: 0 8px 40px 0 rgba(0, 0, 0, 0.4), -2px 2px 4px 0 rgba(255, 255, 255, 0.2) inset, -2px -2px 4px 0 rgba(0, 0, 0, 0.1) inset;
+}
+
+.multi-button button:active {
+  box-shadow: 2px 2px 4px 0 rgba(0, 0, 0, 0.04) inset, -2px -2px 4px 0 rgba(255, 255, 255, 0.3) inset;
+  background: #e2e2e2;
+  transition: color 0s ease, background 0s ease;
+}
+
+.multi-button button:active img,
+.multi-button button:active span {
+  transform: translateY(1px);
+}
+
+.multi-button button:focus {
+  border: 0;
+  outline: 0;
+}
+
+.multi-button button:focus::-moz-focus-inner {
+  border: 0;
+  outline: 0;
+}
+
+.submenu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #f0f0f0;
+  border-radius: 0 0 40px 40px;
+  box-shadow: -0px -0px 10px 0 rgba(255, 255, 255, 0.8),
+    0px 0px 10px 0 rgba(0, 0, 0, 0.06),
+    -0px -0px 4px 0 white,
+    -0px -0px 4px 0 rgba(0, 0, 0, 0.06),
+    -0px -0px 4px 0 rgba(0, 0, 0, 0.01) inset,
+    -0px -0px 4px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+.submenu button {
+  display: block;
+  width: 100%;
+  border-radius: 0;
+}
+
+.multi-button button:hover .submenu {
+  display: block;
+}
+
+@media only screen and (max-width: 500px) {
+  .multi-button {
+    flex-direction: column;
+  }
+
+  .multi-button button:first-child {
+    border-radius: 40px 40px 0 0 !important;
+  }
+
+  .multi-button button:last-child {
+    border-radius: 0 0 40px 40px !important;
+  }
+
+  .submenu {
+    position: relative;
+    top: 0;
+  }
+}

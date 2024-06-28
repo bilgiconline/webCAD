@@ -5,21 +5,21 @@ var osmLayer = new ol.layer.Tile({
 
 var bingRoadsLayer = new ol.layer.Tile({
     source: new ol.source.BingMaps({
-        key: 'YOUR_BING_API_KEY',
+        key: 'SECRET_API_KEY',
         imagerySet: 'Road'
     })
 });
 
 var bingAerialLayer = new ol.layer.Tile({
     source: new ol.source.BingMaps({
-        key: 'YOUR_BING_API_KEY',
+        key: 'SECRET_API_KEY',
         imagerySet: 'Aerial'
     })
 });
 
 var bingAerialWithLabelsLayer = new ol.layer.Tile({
     source: new ol.source.BingMaps({
-        key: 'YOUR_BING_API_KEY',
+        key: 'SECRET_API_KEY',
         imagerySet: 'AerialWithLabels'
     })
 });

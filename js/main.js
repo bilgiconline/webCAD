@@ -264,7 +264,6 @@ map.getViewport().addEventListener('contextmenu', function (e) {
     map.removeInteraction(draw);
     map.removeInteraction(modify);
     source.removeFeature(copiedFeature);
-    selectedFeatures = [];
     copiedFeature = null;
     moveInteractionActive = false;
     moveStartCoordinate = null;

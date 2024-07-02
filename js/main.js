@@ -5,21 +5,21 @@ var osmLayer = new ol.layer.Tile({
 
 var bingRoadsLayer = new ol.layer.Tile({
     source: new ol.source.BingMaps({
-        key: 'SECRET_API_KEY',
+        key: 'YOUR_BING_API_KEY',
         imagerySet: 'Road'
     })
 });
 
 var bingAerialLayer = new ol.layer.Tile({
     source: new ol.source.BingMaps({
-        key: 'SECRET_API_KEY',
+        key: 'YOUR_BING_API_KEY',
         imagerySet: 'Aerial'
     })
 });
 
 var bingAerialWithLabelsLayer = new ol.layer.Tile({
     source: new ol.source.BingMaps({
-        key: 'SECRET_API_KEY',
+        key: 'YOUR_BING_API_KEY',
         imagerySet: 'AerialWithLabels'
     })
 });
@@ -129,9 +129,18 @@ document.getElementById('toggle-snap').addEventListener('click', function () {
 function addInteraction() {
     var value = typeSelect.value;
     if (value !== 'None') {
+        if (value == 'Rectangle'){
+            draw = new ol.interaction.Draw({
+                source: source,
+                type: 'Circle',
+                geometryFunction: ol.interaction.Draw.createBox(),
+                maxPoints: 2            
+            });
+        }
+        else
         draw = new ol.interaction.Draw({
             source: source,
-            type: value
+            type: value                
         });
         map.addInteraction(draw);
         map.addInteraction(snap);
@@ -154,7 +163,7 @@ function addInteraction() {
                 })
             }));
             map.addInteraction(snap);
-            if (value === 'Polygon') {
+            if (value === 'Polygon' || value === 'Rectangle') {
                 calculateAndAddLabel(feature);
             }
         });
@@ -251,6 +260,18 @@ map.getViewport().addEventListener('contextmenu', function (e) {
         map.removeInteraction(modify);
         addInteraction();
     }
+    typeSelect.value = 'None';
+    map.removeInteraction(draw);
+    map.removeInteraction(modify);
+    source.removeFeature(copiedFeature);
+    selectedFeatures = [];
+    copiedFeature = null;
+    moveInteractionActive = false;
+    moveStartCoordinate = null;
+    initialFeatureCoordinate = null;
+    currentOperation = null;
+    addInteraction();
+    deletemeasure();
 });
 
 function calculateAndAddLabel(feature) {
@@ -267,8 +288,8 @@ function calculateAndAddLabel(feature) {
         position: center,
         positioning: 'center-center'
     });
-
     map.addOverlay(labelOverlay);
+    Draggable.create(labelElement);
 }
 function addLabel(feature) {
     var geom = feature.getGeometry();
@@ -284,11 +305,11 @@ function addLabel(feature) {
         position: center,
         positioning: 'center-center'
     });
-
     map.addOverlay(labelOverlay);
 }
 
 var drawTools = document.getElementById('draw-tools');
+Draggable.create(drawTools)
 document.getElementById('draw-nothing').addEventListener('click', function () {
     typeSelect.value = 'None';
     map.removeInteraction(draw);
@@ -309,6 +330,12 @@ document.getElementById('draw-line').addEventListener('click', function () {
 
 document.getElementById('draw-polygon').addEventListener('click', function () {
     typeSelect.value = 'Polygon';
+    map.removeInteraction(draw);
+    addInteraction();
+});
+
+document.getElementById('draw-rectangle').addEventListener('click', function () {
+    typeSelect.value = 'Rectangle';
     map.removeInteraction(draw);
     addInteraction();
 });
@@ -347,7 +374,7 @@ function moveFeatureWithMouse(event) {
         moveStartCoordinate = coordinate;
     }
 }
-
+let movedelement = null;
 map.on('click', function (event) {
     if (currentOperation && copiedFeature) {
         if (!moveInteractionActive) {
@@ -357,7 +384,8 @@ map.on('click', function (event) {
             const geometry = copiedFeature.getGeometry();
             initialFeatureCoordinate = geometry.getCoordinates()[0];
 
-            if (currentOperation === 'copy') {
+            if (currentOperation === 'copy' || currentOperation === 'move') {
+                movedelement = copiedFeature;
                 copiedFeature = new ol.Feature({
                     geometry: new ol.geom.Polygon([initialFeatureCoordinate]),
                 });
@@ -369,6 +397,10 @@ map.on('click', function (event) {
             map.on('pointermove', moveFeatureWithMouse);
         } else {
             map.un('pointermove', moveFeatureWithMouse);
+            if (currentOperation === 'move') {
+                source.removeFeature(movedelement);
+                movedelement = null;
+            };                  
             moveInteractionActive = false;
             currentOperation = null;
             copiedFeature = null;
@@ -437,3 +469,80 @@ document.getElementById('modify-feature').addEventListener('click', function () 
           }
         }
       });
+// DragBox etkileşimi
+var dragBox = new ol.interaction.DragBox({
+    condition: ol.events.condition.platformModifierKeyOnly, // Ctrl tuşu ile etkinleştir
+    style: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: [0, 0, 255, 1]
+        })
+    })
+});
+
+map.addInteraction(dragBox);
+
+dragBox.on('boxend', function() {
+    var extent = dragBox.getGeometry().getExtent();
+    vector.getSource().forEachFeatureIntersectingExtent(extent, function(feature) {
+        selectedFeatures.push(feature);
+    });
+});
+
+dragBox.on('boxstart', function() {
+    selectedFeatures.clear();
+});
+
+var measureitemlist = [];
+document.getElementById('measure-feature').addEventListener('click', function () {
+    measureItem();
+});
+
+function measureItem() {
+    draw = new ol.interaction.Draw({
+        source: source,
+        type: 'LineString'
+    });
+    map.addInteraction(draw);
+    map.addInteraction(snap);
+
+    draw.on('drawend', function (event) {
+        var feature = event.feature;
+        measureitemlist.push({
+            feature: feature,
+        });
+
+        feature.setStyle(new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: '#ffcc33',
+                width: 4
+            }),
+            image: new ol.style.Circle({
+                radius: 7,
+                fill: new ol.style.Fill({
+                    color: '#ffcc33'
+                }),
+                stroke: new ol.style.Stroke({
+                    color: '#fff',
+                    width: 4
+                })
+            })
+        }));
+
+        map.removeInteraction(draw); // Ölçüm bitiminde çizim etkileşimini kaldır
+        map.removeInteraction(snap);
+    });
+
+    draw.on('drawstart', function() {
+        map.getOverlays().clear(); // Önceki tüm etiketleri temizle
+    });
+}
+
+function deletemeasure() {
+    if (measureitemlist.length > 0) {
+        measureitemlist.forEach(function (item) {
+            source.removeFeature(item.feature); // Özellikleri sil
+            map.removeOverlay(item.overlay); // Overlays'leri sil
+        });
+        measureitemlist = []; // Listeyi temizle
+    }
+}

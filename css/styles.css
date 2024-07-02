@@ -106,6 +106,10 @@ body {
   background-image: url('image/button/polygon.png');
 }
 
+#draw-rectangle {
+  background-image: url('image/button/rectangle.png');
+}
+
 .element-modify-tools {
   display: block;
   position: absolute;
@@ -150,13 +154,13 @@ body {
 }
 
 .label {
-  background-color: white;
-  border: 1px solid black;
-  padding: 2px;
+  position: relative;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
   font-size: 12px;
   white-space: nowrap;
-  position: absolute;
-  transform: translate(-50%, -50%);
 }
 
 .controls {
@@ -330,4 +334,23 @@ body {
     position: relative;
     top: 0;
   }
+}
+
+.tooltip {
+  position: relative;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tooltip-measure {
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 1px solid white;
+  padding: 4px;
+  font-size: 12px;
+  min-width: 50px;
+  text-align: center;
 }

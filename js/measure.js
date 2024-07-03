@@ -1,143 +1,251 @@
-import { map } from './main.js';
-import { source } from './main.js';
-import { vector } from './main.js';
-var draw;
-var sketch;
-var measureTooltipElement;
-var measureTooltip;
+const typeSelect = 'line';
+const showSegments = true;
+const clearPrevious = true;
 
-var measureStartButton = document.getElementById('measure-feature');
-
-var vector = new ol.layer.Vector({
-    source: new ol.source.Vector(),
-    style: new ol.style.Style({
-        fill: new ol.style.Fill({
-            color: 'rgba(255, 255, 255, 0.2)',
-        }),
-        stroke: new ol.style.Stroke({
-            color: '#ffcc33',
-            width: 2,
-        }),
-        image: new ol.style.Circle({
-            radius: 5,
-            fill: new ol.style.Fill({
-                color: '#ffcc33',
-            }),
-        }),
+const style = new Style({
+  fill: new Fill({
+    color: 'rgba(255, 255, 255, 0.2)',
+  }),
+  stroke: new Stroke({
+    color: 'rgba(0, 0, 0, 0.5)',
+    lineDash: [10, 10],
+    width: 2,
+  }),
+  image: new CircleStyle({
+    radius: 5,
+    stroke: new Stroke({
+      color: 'rgba(0, 0, 0, 0.7)',
     }),
+    fill: new Fill({
+      color: 'rgba(255, 255, 255, 0.2)',
+    }),
+  }),
 });
 
-map.addLayer(vector);
+const labelStyle = new Style({
+  text: new Text({
+    font: '14px Calibri,sans-serif',
+    fill: new Fill({
+      color: 'rgba(255, 255, 255, 1)',
+    }),
+    backgroundFill: new Fill({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+    padding: [3, 3, 3, 3],
+    textBaseline: 'bottom',
+    offsetY: -15,
+  }),
+  image: new RegularShape({
+    radius: 8,
+    points: 3,
+    angle: Math.PI,
+    displacement: [0, 10],
+    fill: new Fill({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+  }),
+});
 
-/**
- * Format length output.
- * @param {ol.geom.LineString} line The line geometry.
- * @return {string} The formatted length.
- */
-var formatLength = function (line) {
-    var length = ol.sphere.getLength(line);
-    var output;
-    if (length > 1000) {
-        output = (Math.round(length / 1000 * 100) / 100) +
-            ' ' + 'km';
-    } else {
-        output = (Math.round(length * 100) / 100) +
-            ' ' + 'm';
-    }
-    return output;
+const tipStyle = new Style({
+  text: new Text({
+    font: '12px Calibri,sans-serif',
+    fill: new Fill({
+      color: 'rgba(255, 255, 255, 1)',
+    }),
+    backgroundFill: new Fill({
+      color: 'rgba(0, 0, 0, 0.4)',
+    }),
+    padding: [2, 2, 2, 2],
+    textAlign: 'left',
+    offsetX: 15,
+  }),
+});
+
+const modifyStyle = new Style({
+  image: new CircleStyle({
+    radius: 5,
+    stroke: new Stroke({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+    fill: new Fill({
+      color: 'rgba(0, 0, 0, 0.4)',
+    }),
+  }),
+  text: new Text({
+    text: 'Drag to modify',
+    font: '12px Calibri,sans-serif',
+    fill: new Fill({
+      color: 'rgba(255, 255, 255, 1)',
+    }),
+    backgroundFill: new Fill({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+    padding: [2, 2, 2, 2],
+    textAlign: 'left',
+    offsetX: 15,
+  }),
+});
+
+const segmentStyle = new Style({
+  text: new Text({
+    font: '12px Calibri,sans-serif',
+    fill: new Fill({
+      color: 'rgba(255, 255, 255, 1)',
+    }),
+    backgroundFill: new Fill({
+      color: 'rgba(0, 0, 0, 0.4)',
+    }),
+    padding: [2, 2, 2, 2],
+    textBaseline: 'bottom',
+    offsetY: -12,
+  }),
+  image: new RegularShape({
+    radius: 6,
+    points: 3,
+    angle: Math.PI,
+    displacement: [0, 8],
+    fill: new Fill({
+      color: 'rgba(0, 0, 0, 0.4)',
+    }),
+  }),
+});
+
+const segmentStyles = [segmentStyle];
+
+const formatLength = function (line) {
+  const length = getLength(line);
+  let output;
+  if (length > 100) {
+    output = Math.round((length / 1000) * 100) / 100 + ' km';
+  } else {
+    output = Math.round(length * 100) / 100 + ' m';
+  }
+  return output;
 };
 
-/**
- * Creates a new measure tooltip
- */
-function createMeasureTooltip() {
-    measureTooltipElement = document.createElement('div');
-    measureTooltipElement.className = 'tooltip tooltip-measure';
-    measureTooltip = new ol.Overlay({
-        element: measureTooltipElement,
-        offset: [0, -15],
-        positioning: 'bottom-center'
+const formatArea = function (polygon) {
+  const area = getArea(polygon);
+  let output;
+  if (area > 10000) {
+    output = Math.round((area / 1000000) * 100) / 100 + ' km\xB2';
+  } else {
+    output = Math.round(area * 100) / 100 + ' m\xB2';
+  }
+  return output;
+};
+
+
+const modify = new Modify({source: source, style: modifyStyle});
+
+let tipPoint;
+
+function styleFunction(feature, segments, drawType, tip) {
+  const styles = [];
+  const geometry = feature.getGeometry();
+  const type = geometry.getType();
+  let point, label, line;
+  if (!drawType || drawType === type || type === 'Point') {
+    styles.push(style);
+    if (type === 'Polygon') {
+      point = geometry.getInteriorPoint();
+      label = formatArea(geometry);
+      line = new LineString(geometry.getCoordinates()[0]);
+    } else if (type === 'LineString') {
+      point = new Point(geometry.getLastCoordinate());
+      label = formatLength(geometry);
+      line = geometry;
+    }
+  }
+  if (segments && line) {
+    let count = 0;
+    line.forEachSegment(function (a, b) {
+      const segment = new LineString([a, b]);
+      const label = formatLength(segment);
+      if (segmentStyles.length - 1 < count) {
+        segmentStyles.push(segmentStyle.clone());
+      }
+      const segmentPoint = new Point(segment.getCoordinateAt(0.5));
+      segmentStyles[count].setGeometry(segmentPoint);
+      segmentStyles[count].getText().setText(label);
+      styles.push(segmentStyles[count]);
+      count++;
     });
-    map.addOverlay(measureTooltip);
+  }
+  if (label) {
+    labelStyle.setGeometry(point);
+    labelStyle.getText().setText(label);
+    styles.push(labelStyle);
+  }
+  if (
+    tip &&
+    type === 'Point' &&
+    !modify.getOverlay().getSource().getFeatures().length
+  ) {
+    tipPoint = geometry;
+    tipStyle.getText().setText(tip);
+    styles.push(tipStyle);
+  }
+  return styles;
 }
 
-/**
- * Handle pointer move event.
- * @param {ol.MapBrowserEvent} evt The event.
- */
-var pointerMoveHandler = function (evt) {
-    if (sketch) {
-        var output;
-        var geom = sketch.getGeometry();
-        if (geom instanceof ol.geom.Polygon) {
-            output = formatArea(geom);
-        } else if (geom instanceof ol.geom.LineString) {
-            output = formatLength(geom);
-        }
-        measureTooltipElement.innerHTML = output;
-        measureTooltip.setPosition(evt.coordinate);
-    }
-};
+const dvector = new VectorLayer({
+  source: source,
+  style: function (feature) {
+    return styleFunction(feature, showSegments.checked);
+  },
+});
 
-/**
- * Function to add interaction for measuring length or area.
- */
+
+map.addMeasureInteraction(modify);
+
+let o_draw; // global so we can remove it later
+const measurelist = [];
 function addMeasureInteraction() {
-    var type = (typeSelect.value == 'Polygon') ? 'Polygon' : 'LineString';
-    draw = new ol.interaction.Draw({
-        source: measureLayer.getSource(),
-        type: type,
+  const drawType = 'line';
+  const activeTip =
+    'Click to continue drawing the ' +
+    (drawType === 'Polygon' ? 'polygon' : 'line');
+  const idleTip = 'Click to start measuring';
+  let tip = idleTip;
+  o_draw = new Draw({
+    source: source,
+    type: drawType,
+    style: function (feature) {
+      return styleFunction(feature, showSegments.checked, drawType, tip);
+    },
+  });
+  draw.on('drawstart', function () {
+    if (clearPrevious.checked) {
+      if (measurelist.length > 0) {
+        measurelist.forEach(function (item) {
+            source.removeFeature(item);
+        });
+      }
+      measurelist = [];
+    }
+    modify.setActive(false);
+    tip = activeTip;
+  });
+  draw.on('drawend', function () {
+    modifyStyle.setGeometry(tipPoint);
+    modify.setActive(true);
+    map.once('pointermove', function () {
+      modifyStyle.setGeometry();
     });
-    map.addInteraction(draw);
-    createMeasureTooltip();
-
-    draw.on('drawstart', function (evt) {
-        sketch = evt.feature;
-    });
-
-    draw.on('drawend', function () {
-        measureTooltipElement.className = 'tooltip tooltip-static';
-        measureTooltip.setOffset([0, -7]);
-        sketch = null;
-        measureTooltipElement = null;
-        createMeasureTooltip();
-    });
-
-    map.on('pointermove', pointerMoveHandler);
+    tip = idleTip;
+  });
+  modify.setActive(true);
+  map.addMeasureInteraction(draw);
 }
 
-/**
- * Clear the measure tooltip and sketch.
- */
-function clearMeasureElements() {
-    if (measureTooltipElement) {
-        measureTooltipElement.parentNode.removeChild(measureTooltipElement);
-    }
-    if (measureTooltip) {
-        map.removeOverlay(measureTooltip);
-    }
-    measureTooltipElement = null;
-    measureTooltip = null;
-
-    measureLayer.getSource().clear(); // Clear measure features
-}
-
-/**
- * Handle right-click to finish measure
- */
-map.getViewport().addEventListener('contextmenu', function (event) {
-    event.preventDefault();
-    clearMeasureElements();
-});
-
-/**
- * Handle change event of draw type select input
- */
 typeSelect.onchange = function () {
-    clearMeasureElements();
+  map.removeInteraction(draw);
+  addMeasureInteraction();
 };
 
-measureStartButton.addEventListener('click', function () {
-    clearMeasureElements(); // Clear any existing measures
-    addMeasureInteraction();
-});
+addMeasureInteraction();
+
+showSegments.onchange = function () {
+  dvector.changed();
+  draw.getOverlay().changed();
+};

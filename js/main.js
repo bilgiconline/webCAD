@@ -125,8 +125,26 @@ document.getElementById('toggle-snap').addEventListener('click', function () {
         this.textContent = "Snap'i Kapat";
     }
 });
+const atypeSelect = 'line';
+const showSegments = true;
+const clearPrevious = true;
 
+let o_draw; // global so we can remove it later
+let measurelist = [];
+let tipPoint;
 function addInteraction() {
+    map.removeInteraction(o_draw);
+    try {
+        map.removeInteraction(omodify);
+    } catch(error) {
+
+    }
+    if (measurelist.length > 0) {
+        measurelist.forEach(function (item) {
+          source.removeFeature(item);
+        });
+      }
+     measurelist = [];   
     var value = typeSelect.value;
     if (value !== 'None') {
         if (value == 'Rectangle'){
@@ -141,6 +159,12 @@ function addInteraction() {
         draw = new ol.interaction.Draw({
             source: source,
             type: value                
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.ctrlKey && event.key === 'z') {
+                draw.removeLastPoint();
+                map.addInteraction(snap);
+            }
         });
         map.addInteraction(draw);
         map.addInteraction(snap);
@@ -167,19 +191,23 @@ function addInteraction() {
                 calculateAndAddLabel(feature);
             }
         });
-        document.addEventListener('keydown', function (event) {
-            if (event.ctrlKey && event.key === 'z') {
-                draw.removeLastPoint();
-                map.addInteraction(snap);
-            }
-        });
     }
 }
 
 var typeSelect = document.getElementById('draw-type');
 typeSelect.onchange = function () {
     map.removeInteraction(draw);
+    map.removeInteraction(o_draw);
+    map.removeInteraction(omodify);
     addInteraction();
+    if (measurelist.length > 0) {
+        measurelist.forEach(function (item) {
+          source.removeFeature(item);
+        });
+      }
+     measurelist = [];   
+     map.removeInteraction(o_draw);
+     map.removeInteraction(omodify);
 };
 
 addInteraction();
@@ -263,14 +291,21 @@ map.getViewport().addEventListener('contextmenu', function (e) {
     typeSelect.value = 'None';
     map.removeInteraction(draw);
     map.removeInteraction(modify);
-    source.removeFeature(copiedFeature);
+    source.removeFeature(copiedFeature);     
     copiedFeature = null;
     moveInteractionActive = false;
     moveStartCoordinate = null;
     initialFeatureCoordinate = null;
     currentOperation = null;
+    map.removeInteraction(o_draw);
+    if (measurelist.length > 0) {
+        measurelist.forEach(function (item) {
+          source.removeFeature(item);
+        });
+      }
+     measurelist = [];
     addInteraction();
-    deletemeasure();
+    map.removeInteraction(omodify);
 });
 
 function calculateAndAddLabel(feature) {
@@ -409,15 +444,19 @@ map.on('click', function (event) {
 });
 
 document.getElementById('delete-feature').addEventListener('click', function () {
-    const selectedFeatures = selectInteraction.getFeatures();
+    selectedFeatures = selectInteraction.getFeatures();
     if (selectedFeatures.getLength() > 0) {
-        const featureToDelete = selectedFeatures.item(0);
-        source.removeFeature(featureToDelete);
-        select.getFeatures().clear();
-        alert('Seçili poligon silindi.');
-    } else {
-        alert('Silinecek poligon seçili değil.');
+        selectedFeatures.forEach(function (item) {
+            source.removeFeature(item); // Özellikleri sil
+        });
     }
+    try {
+        var selectedFeaturesDiv = document.getElementById('selected-features');
+        selectedFeaturesDiv.innerHTML = '<h3>Element Özellikleri:' + '</h3><ul>';
+        selectedFeatures = selectInteraction.getFeatures();
+    } catch {
+        selectedFeatures = [];
+    }   
 });
 var selectedFeatures = selectInteraction.getFeatures();
 
@@ -468,7 +507,8 @@ document.getElementById('modify-feature').addEventListener('click', function () 
           }
         }
       });
-// DragBox etkileşimi
+
+      // DragBox etkileşimi
 var dragBox = new ol.interaction.DragBox({
     condition: ol.events.condition.platformModifierKeyOnly, // Ctrl tuşu ile etkinleştir
     style: new ol.style.Style({
@@ -482,66 +522,312 @@ map.addInteraction(dragBox);
 
 dragBox.on('boxend', function() {
     var extent = dragBox.getGeometry().getExtent();
+    var features = [];
     vector.getSource().forEachFeatureIntersectingExtent(extent, function(feature) {
-        selectedFeatures.push(feature);
+        if (!selectedFeatures.getArray().includes(feature)) {
+            features.push(feature);
+        }
     });
+    selectedFeatures.extend(features);
 });
 
 dragBox.on('boxstart', function() {
-    selectedFeatures.clear();
+    selectedFeatures = selectInteraction.getFeatures();
 });
 
-var measureitemlist = [];
-document.getElementById('measure-feature').addEventListener('click', function () {
-    measureItem();
-});
 
-function measureItem() {
-    draw = new ol.interaction.Draw({
-        source: source,
-        type: 'LineString'
-    });
-    map.addInteraction(draw);
-    map.addInteraction(snap);
 
-    draw.on('drawend', function (event) {
-        var feature = event.feature;
-        measureitemlist.push({
-            feature: feature,
-        });
 
-        feature.setStyle(new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: '#ffcc33',
-                width: 4
-            }),
-            image: new ol.style.Circle({
-                radius: 7,
-                fill: new ol.style.Fill({
-                    color: '#ffcc33'
-                }),
-                stroke: new ol.style.Stroke({
-                    color: '#fff',
-                    width: 4
-                })
-            })
-        }));
 
-        map.removeInteraction(draw); // Ölçüm bitiminde çizim etkileşimini kaldır
-        map.removeInteraction(snap);
-    });
 
-    draw.on('drawstart', function() {
-        map.getOverlays().clear(); // Önceki tüm etiketleri temizle
-    });
-}
-
-function deletemeasure() {
-    if (measureitemlist.length > 0) {
-        measureitemlist.forEach(function (item) {
-            source.removeFeature(item.feature); // Özellikleri sil
-            map.removeOverlay(item.overlay); // Overlays'leri sil
-        });
-        measureitemlist = []; // Listeyi temizle
+document.getElementById('measure').addEventListener('click', function () {
+    if (draw) {
+        map.removeInteraction(draw);
+        map.removeInteraction(modify);
+        addInteraction();
     }
+    typeSelect.value = 'None';
+    map.removeInteraction(draw);
+    map.removeInteraction(modify);
+    source.removeFeature(copiedFeature);     
+    copiedFeature = null;
+    moveInteractionActive = false;
+    moveStartCoordinate = null;
+    initialFeatureCoordinate = null;
+    currentOperation = null;
+    map.removeInteraction(o_draw);
+    if (measurelist.length > 0) {
+        measurelist.forEach(function (item) {
+          source.removeFeature(item);
+        });
+      }
+     measurelist = [];
+    addInteraction();
+    map.removeInteraction(omodify);
+    addMeasureInteraction();
+});
+
+
+
+const style = new ol.style.Style({
+  fill: new ol.style.Fill({
+    color: 'rgba(255, 255, 255, 0.2)',
+  }),
+  stroke: new ol.style.Stroke({
+    color: 'rgba(0, 0, 0, 0.5)',
+    lineDash: [10, 10],
+    width: 2,
+  }),
+  image: new ol.style.Circle({
+    radius: 5,
+    stroke: new ol.style.Stroke({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+    fill: new ol.style.Fill({
+      color: 'rgba(255, 255, 255, 0.2)',
+    }),
+  }),
+});
+
+const labelStyle = new ol.style.Style({
+  text: new ol.style.Text({
+    font: '14px Calibri,sans-serif',
+    fill: new ol.style.Fill({
+      color: 'rgba(255, 255, 255, 1)',
+    }),
+    backgroundFill: new ol.style.Fill({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+    padding: [3, 3, 3, 3],
+    textBaseline: 'bottom',
+    offsetY: -15,
+  }),
+  image: new ol.style.RegularShape({
+    radius: 8,
+    points: 3,
+    angle: Math.PI,
+    displacement: [0, 10],
+    fill: new ol.style.Fill({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+  }),
+});
+
+const tipStyle = new ol.style.Style({
+  text: new ol.style.Text({
+    font: '12px Calibri,sans-serif',
+    fill: new ol.style.Fill({
+      color: 'rgba(255, 255, 255, 1)',
+    }),
+    backgroundFill: new ol.style.Fill({
+      color: 'rgba(0, 0, 0, 0.4)',
+    }),
+    padding: [2, 2, 2, 2],
+    textAlign: 'left',
+    offsetX: 15,
+  }),
+});
+
+const modifyStyle = new ol.style.Style({
+  image: new ol.style.Circle({
+    radius: 5,
+    stroke: new ol.style.Stroke({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+    fill: new ol.style.Fill({
+      color: 'rgba(0, 0, 0, 0.4)',
+    }),
+  }),
+  text: new ol.style.Text({
+    text: 'Değişiklik için taşıyın',
+    font: '12px Calibri,sans-serif',
+    fill: new ol.style.Fill({
+      color: 'rgba(255, 255, 255, 1)',
+    }),
+    backgroundFill: new ol.style.Fill({
+      color: 'rgba(0, 0, 0, 0.7)',
+    }),
+    padding: [2, 2, 2, 2],
+    textAlign: 'left',
+    offsetX: 15,
+  }),
+});
+
+const segmentStyle = new ol.style.Style({
+  text: new ol.style.Text({
+    font: '12px Calibri,sans-serif',
+    fill: new ol.style.Fill({
+      color: 'rgba(255, 255, 255, 1)',
+    }),
+    backgroundFill: new ol.style.Fill({
+      color: 'rgba(0, 0, 0, 0.4)',
+    }),
+    padding: [2, 2, 2, 2],
+    textBaseline: 'bottom',
+    offsetY: -12,
+  }),
+  image: new ol.style.RegularShape({
+    radius: 6,
+    points: 3,
+    angle: Math.PI,
+    displacement: [0, 8],
+    fill: new ol.style.Fill({
+      color: 'rgba(0, 0, 0, 0.4)',
+    }),
+  }),
+});
+
+const segmentStyles = [segmentStyle];
+
+const formatLength = function (line) {
+  const length = ol.sphere.getLength(line);
+  let output;
+  if (length > 100) {
+    output = Math.round((length / 1000) * 100) / 100 + ' km';
+  } else {
+    output = Math.round(length * 100) / 100 + ' m';
+  }
+  return output;
+};
+
+const formatArea = function (polygon) {
+  const area = ol.sphere.getArea(polygon);
+  let output;
+  if (area > 10000) {
+    output = Math.round((area / 1000000) * 100) / 100 + ' km\xB2';
+  } else {
+    output = Math.round(area * 100) / 100 + ' m\xB2';
+  }
+  return output;
+};
+
+//const source = new ol.source.Vector(); // Add this line
+
+const omodify = new ol.interaction.Modify({source: source, style: modifyStyle});
+
+function styleFunction(feature, segments, drawType, tip) {
+  const styles = [];
+  const geometry = feature.getGeometry();
+  const type = geometry.getType();
+  let point, label, line;
+  if (!drawType || drawType === type || type === 'Point') {
+    styles.push(style);
+    if (type === 'Polygon') {
+      point = geometry.getInteriorPoint();
+      label = formatArea(geometry);
+      line = new ol.geom.LineString(geometry.getCoordinates()[0]);
+    } else if (type === 'LineString') {
+      point = new ol.geom.Point(geometry.getLastCoordinate());
+      label = formatLength(geometry);
+      line = geometry;
+    }
+  }
+  if (line) {
+    let count = 0;
+    line.forEachSegment(function (a, b) {
+      const segment = new ol.geom.LineString([a, b]);
+      const label = formatLength(segment);
+      if (segmentStyles.length - 1 < count) {
+        segmentStyles.push(segmentStyle.clone());
+      }
+      const segmentPoint = new ol.geom.Point(segment.getCoordinateAt(0.5));
+      segmentStyles[count].setGeometry(segmentPoint);
+      segmentStyles[count].getText().setText(label);
+      styles.push(segmentStyles[count]);
+      count++;
+    });
+  }
+  if (label) {
+    labelStyle.setGeometry(point);
+    labelStyle.getText().setText(label);
+    styles.push(labelStyle);
+  }
+  if (
+    tip &&
+    type === 'Point' &&
+    !omodify.getOverlay().getSource().getFeatures().length
+  ) {
+    tipPoint = geometry;
+    tipStyle.getText().setText(tip);
+    styles.push(tipStyle);
+  }
+  return styles;
 }
+
+const dvector = new ol.layer.Vector({
+  source: source,
+  style: function (feature) {
+    return styleFunction(feature, showSegments.checked);
+  },
+});
+
+map.addLayer(dvector);  // Add the measure layer to the map
+
+map.addInteraction(omodify);
+
+
+function addMeasureInteraction() {
+    typeSelect.value = 'None';
+    map.removeInteraction(draw);
+    map.removeInteraction(modify);
+    addInteraction();
+  const drawType = 'LineString';
+  const activeTip =
+    'Ölçmeye devam etmek için tıklayın ' 
+      const idleTip = 'Ölçmeye başlamak için tıklayın';
+  let tip = idleTip;
+  o_draw = new ol.interaction.Draw({
+    source: source,
+    type: drawType,
+    style: function (feature) {
+      return styleFunction(feature, showSegments.checked, drawType, tip);
+    },
+  });
+  o_draw.on('drawstart', function () {
+      if (measurelist.length > 0) {
+        measurelist.forEach(function (item) {
+          source.removeFeature(item);
+        });
+      }
+      measurelist = [];
+    omodify.setActive(false);
+    tip = activeTip;
+  });
+  o_draw.on('drawend', function (event) {
+    measurelist.push(event.feature);
+    modifyStyle.setGeometry(tipPoint);
+    omodify.setActive(true);
+    map.once('pointermove', function () {
+      modifyStyle.setGeometry();
+    });
+    tip = idleTip;
+    map.removeInteraction(o_draw);
+  });
+  omodify.setActive(true);
+  map.addInteraction(o_draw);
+}
+
+atypeSelect.onchange = function () {
+    map.removeInteraction(draw);
+    map.removeInteraction(o_draw);
+    map.removeInteraction(omodify);
+    addInteraction();
+    if (measurelist.length > 0) {
+        measurelist.forEach(function (item) {
+          source.removeFeature(item);
+        });
+      }
+     measurelist = [];   
+     map.removeInteraction(o_draw);
+     map.removeInteraction(omodify);
+  addMeasureInteraction();
+};
+
+addMeasureInteraction();
+
+showSegments.onchange = function () {
+  dvector.changed();
+  o_draw.getOverlay().changed();
+};
+map.removeInteraction(o_draw);
+map.removeInteraction(omodify);

@@ -1,5 +1,5 @@
 Online Test:
-https://bilgiccad.free.nf/
+https://bilgiccad.free.nf/ (not include 3D View and some modules)
 
 For the 3D viewer;
 

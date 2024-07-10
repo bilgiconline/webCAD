@@ -354,3 +354,40 @@ body {
   min-width: 50px;
   text-align: center;
 }
+.popup {
+  display: none; /* Gizli başlat */
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1100px;
+  height: 600px;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+  z-index: 9999; /* Üstte gözükmesi için */
+}
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.popup-content {
+  margin-top: 10px;
+}
+.popup-close {
+  cursor: pointer;
+  font-weight: bold;
+}
+.popup-button {
+  padding: 10px 20px;
+  cursor: pointer;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  position: absolute;
+  left: 10px;
+  bottom: 90px;
+  z-index: 9999;
+}

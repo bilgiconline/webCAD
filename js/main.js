@@ -1,4 +1,3 @@
-// js/main.js
 var osmLayer = new ol.layer.Tile({
     source: new ol.source.OSM()
 });
@@ -38,7 +37,7 @@ var layers = {
     'bing-aerial': bingAerialLayer,
     'bing-aerial-labels': bingAerialWithLabelsLayer
 };
-var extent = [0, 0, 43.47843864, 37.9335524];
+var extent = [0, 0, 37.77843864, 37.9335524];
 
 var pngSource = new ol.source.ImageStatic({
     url: 'data/Z_50.tif',
@@ -170,6 +169,8 @@ function addInteraction() {
         map.addInteraction(snap);
         draw.on('drawend', function (event) {
             var feature = event.feature;
+            const coordinates = event.feature.getGeometry().getCoordinates();
+            console.log(coordinates)
             feature.setStyle(new ol.style.Style({
                 stroke: new ol.style.Stroke({
                     color: '#ffcc33',
@@ -847,3 +848,34 @@ showSegments.onchange = function () {
 };
 map.removeInteraction(o_draw);
 map.removeInteraction(omodify);
+
+// Pop-up işlevleri
+const popup = document.getElementById('popup');
+const showPopupButton = document.getElementById('show-popup');
+const closePopupButton = document.getElementById('popup-close');
+
+showPopupButton.addEventListener('click', () => {
+if (popup.style.display == 'block') {
+  popup.style.display = 'none';
+} else {
+  popup.style.display = 'block';
+  import('./threemodule.js').then(module => {
+   if (selectedFeatures.getLength() > 0) { 
+    const feature = selectedFeatures.item(0);   
+    if (feature.getGeometry() instanceof ol.geom.Polygon) {
+      const geometry = feature.getGeometry();
+      var coords = geometry.getCoordinates()[0];
+      console.log (coords);
+      module.createGeometry(coords);
+      module.showThreeJS();
+    };
+   }
+
+});
+}
+});
+
+closePopupButton.addEventListener('click', () => {
+    popup.style.display = 'none';
+});
+
